@@ -1,9 +1,11 @@
-import service.LinkManager;
-import service.WebCrawler;
+package com.ludocera.linkcollector;
+
+import com.ludocera.linkcollector.service.LinkManager;
+import com.ludocera.linkcollector.service.WebCrawler;
 
 import java.util.concurrent.Executors;
 
-import static utils.ConfigUtils.getThreadCount;
+import static com.ludocera.linkcollector.utils.ConfigUtils.getThreadCount;
 
 public class Application {
     public static void main(String[] args) {

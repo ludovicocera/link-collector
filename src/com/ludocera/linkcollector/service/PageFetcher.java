@@ -1,19 +1,20 @@
-package service;
+package com.ludocera.linkcollector.service;
 
-import utils.LinkUtils;
+import com.ludocera.linkcollector.exception.FetchPageException;
+import com.ludocera.linkcollector.utils.LinkUtils;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class PageFetcher {
-    private static final Logger logger = Logger.getLogger(PageFetcher.class.getName());
+    private PageFetcher() {
+        throw new IllegalStateException("Utility class, cannot be instantiated");
+    }
 
     public static List<String> extractLinksFromPage(String urlString) {
         try {
@@ -21,21 +22,22 @@ public class PageFetcher {
             String pageContent = fetchPageContent(url);
             return LinkUtils.extractLinks(pageContent, url.getHost());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error fetching page: " + urlString, e);
+            throw new FetchPageException(e.getMessage());
         }
-        return Collections.emptyList();
     }
 
-    private static String fetchPageContent(URL url) throws Exception {
+    private static String fetchPageContent(URL url) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        
+
         connection.setRequestMethod("GET");
         connection.setInstanceFollowRedirects(true);
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(5000);
 
         int responseCode = connection.getResponseCode();
 
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new Exception("HTTP error code: " + responseCode + " for URL: " + url);
+            throw new FetchPageException("HTTP error code: " + responseCode + " for URL: " + url);
         }
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
@@ -45,6 +47,8 @@ public class PageFetcher {
                 content.append(inputLine);
             }
             return content.toString();
+        } finally {
+            connection.disconnect();
         }
     }
 }
