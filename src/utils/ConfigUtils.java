@@ -11,7 +11,6 @@ public final class ConfigUtils {
 
     public static final int DEFAULT_THREAD_COUNT = 10;
     private static final String CONFIG_FILE = "resources/config.properties";
-
     private static final Logger logger = Logger.getLogger(ConfigUtils.class.getName());
     private static final Properties properties = new Properties();
 

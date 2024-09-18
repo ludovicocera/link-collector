@@ -1,7 +1,5 @@
 package service;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -13,13 +11,14 @@ import static utils.LinkUtils.readInputStartUrl;
 public class WebCrawler {
     private static final Logger logger = Logger.getLogger(WebCrawler.class.getName());
 
-    private final LinkManager linkManager = new LinkManager();
+    private final LinkManager linkManager;
     private final ExecutorService executor;
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
-    private final List<Future<?>> futures = Collections.synchronizedList(new ArrayList<>());
+    private final List<Future<?>> futures = new CopyOnWriteArrayList<>();
 
-    public WebCrawler(int threadCount) {
-        executor = Executors.newFixedThreadPool(threadCount);
+    public WebCrawler(ExecutorService executor, LinkManager linkManager) {
+        this.executor = executor;
+        this.linkManager = linkManager;
     }
 
     public void crawl() {
@@ -38,28 +37,9 @@ public class WebCrawler {
                 Future<?> future = executor.submit(() -> processPage(link));
                 futures.add(future);
             }
+
+            cleanUpFutures();
         }
-    }
-
-    private void processPage(String link) {
-        System.out.println("Crawling: " + link);
-
-        try {
-            List<String> linksOnPage = extractLinksFromPage(link);
-            for (String newLink : linksOnPage) {
-                if (linkManager.shouldVisit(newLink)) {
-                    queue.add(newLink);
-                }
-            }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error processing page: " + link, e);
-        }
-    }
-
-    private boolean hasActiveTasks() {
-        futures.removeIf(Future::isDone);
-
-        return futures.stream().anyMatch(future -> !future.isDone());
     }
 
     private void shutdownAndPrintResults() {
@@ -82,5 +62,28 @@ public class WebCrawler {
         }
 
         linkManager.printSortedLinks();
+    }
+
+    private boolean hasActiveTasks() {
+        return futures.stream().anyMatch(future -> !future.isDone());
+    }
+
+    private void processPage(String link) {
+        System.out.println("Crawling: " + link);
+
+        try {
+            List<String> linksOnPage = extractLinksFromPage(link);
+            for (String newLink : linksOnPage) {
+                if (linkManager.shouldVisit(newLink)) {
+                    queue.add(newLink);
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error processing page: " + link, e);
+        }
+    }
+
+    private void cleanUpFutures() {
+        futures.removeIf(Future::isDone);
     }
 }
