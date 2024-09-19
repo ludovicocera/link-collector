@@ -1,5 +1,7 @@
 package com.ludocera.linkcollector.service;
 
+import com.ludocera.linkcollector.utils.ConfigUtils;
+
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -16,9 +18,17 @@ public class WebCrawler {
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
     private final List<Future<?>> futures = new CopyOnWriteArrayList<>();
 
-    public WebCrawler(ExecutorService executor, LinkManager linkManager) {
-        this.executor = executor;
+    public WebCrawler(LinkManager linkManager) {
         this.linkManager = linkManager;
+        
+        if (ConfigUtils.useVirtualThreads()) {
+            logger.info("Using virtual threads for task execution.");
+            executor = Executors.newVirtualThreadPerTaskExecutor();
+        } else {
+            int threadCount = ConfigUtils.getThreadCount();
+            logger.info("Using fixed thread pool with " + threadCount + " threads.");
+            executor = Executors.newFixedThreadPool(threadCount);
+        }
     }
 
     public void crawl() {

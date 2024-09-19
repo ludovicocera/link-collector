@@ -18,17 +18,11 @@ public final class ConfigUtils {
         throw new IllegalStateException("Utility class, cannot be instantiated");
     }
 
-    public static int getThreadCount() {
+    public static boolean useVirtualThreads() {
         loadProperties();
 
-        String threadCountValue = properties.getProperty("threadCount", String.valueOf(DEFAULT_THREAD_COUNT));
-
-        try {
-            return Integer.parseInt(threadCountValue);
-        } catch (NumberFormatException e) {
-            logger.log(SEVERE, "Invalid threadCount in config.properties. Using default value: " + DEFAULT_THREAD_COUNT);
-            return DEFAULT_THREAD_COUNT;
-        }
+        String useVirtualThreadsValue = properties.getProperty("useVirtualThreads", "false");
+        return Boolean.parseBoolean(useVirtualThreadsValue);
     }
 
     private static void loadProperties() {
@@ -43,6 +37,19 @@ public final class ConfigUtils {
             }
         } catch (IOException ex) {
             logger.log(SEVERE, "Exception occurred while loading configuration: ", ex);
+        }
+    }
+
+    public static int getThreadCount() {
+        loadProperties();
+
+        String threadCountValue = properties.getProperty("threadCount", String.valueOf(DEFAULT_THREAD_COUNT));
+
+        try {
+            return Integer.parseInt(threadCountValue);
+        } catch (NumberFormatException e) {
+            logger.log(SEVERE, "Invalid threadCount in config.properties. Using default value: " + DEFAULT_THREAD_COUNT);
+            return DEFAULT_THREAD_COUNT;
         }
     }
 }
